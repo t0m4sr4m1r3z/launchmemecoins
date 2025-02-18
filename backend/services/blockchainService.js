@@ -8,11 +8,9 @@ const account = 'TU_DIRECCION_ETH';
 const privateKey = 'TU_PRIVATE_KEY';
 
 const compileAndDeployContract = async (tokenData) => {
-  // Ruta al archivo del contrato
-  const contractPath = path.resolve(__dirname, '../contracts/CustomToken.sol');
+  const contractPath = path.resolve(__dirname, '../../contracts/CustomToken.sol');
   const sourceCode = fs.readFileSync(contractPath, 'utf8');
 
-  // Compilar el contrato
   const input = {
     language: 'Solidity',
     sources: { 'CustomToken.sol': { content: sourceCode } },
@@ -21,9 +19,8 @@ const compileAndDeployContract = async (tokenData) => {
   const compiled = JSON.parse(solc.compile(JSON.stringify(input)));
   const contract = compiled.contracts['CustomToken.sol']['CustomToken'];
 
-  // Desplegar el contrato
   const tx = new web3.eth.Contract(contract.abi);
-  const data = tx.deploy({ data: contract.evm.bytecode.object });
+  const data = tx.deploy({ data: contract.evm.bytecode.object, arguments: [tokenData.tokenName, tokenData.tokenSymbol, tokenData.totalSupply, 0] });
   const gas = await data.estimateGas();
   const txObject = {
     data: data.encodeABI(),
@@ -32,7 +29,7 @@ const compileAndDeployContract = async (tokenData) => {
 
   const signedTx = await web3.eth.accounts.signTransaction(txObject, privateKey);
   const receipt = await web3.eth.sendSignedTransaction(signedTx.rawTransaction);
-  return receipt.contractAddress;
+  return { contractAddress: receipt.contractAddress };
 };
 
 module.exports = { compileAndDeployContract };
